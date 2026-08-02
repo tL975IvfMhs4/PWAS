@@ -22,10 +22,13 @@
   "files": [],
   "references": [
     {
-      "path": "./tsconfig.app.json"
+      "path": "./apps/schema/tsconfig.app.json"
     },
     {
-      "path": "./tsconfig.spec.json"
+      "path": "./apps/schema/tsconfig.spec.json"
     }
-  ]
+  ],
+  "paths": {
+    "@shared": "libs"
+  }
 }

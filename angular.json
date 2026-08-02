@@ -4,20 +4,26 @@
   "cli": {
     "packageManager": "npm"
   },
-  "newProjectRoot": "projects",
+  "newProjectRoot": "apps",
   "projects": {
-    "PWAS": {
+    "schema": {
       "projectType": "application",
-      "schematics": {},
-      "root": "",
-      "sourceRoot": "src",
-      "prefix": "app",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss",
+          "standalone": true,
+          "changeDetection": "OnPush"
+        }
+      },
+      "root": "apps/schema",
+      "sourceRoot": "apps/schema/src",
+      "prefix": "SCHEMA",
       "architect": {
         "build": {
           "builder": "@angular/build:application",
           "options": {
-            "browser": "src/main.ts",
-            "tsConfig": "tsconfig.app.json",
+            "browser": "apps/schema/src/main.ts",
+            "tsConfig": "apps/schema/tsconfig.app.json",
             "assets": [
               {
                 "glob": "**/*",
@@ -25,7 +31,7 @@
               }
             ],
             "styles": [
-              "src/styles.css"
+              "apps/schema/src/styles.scss"
             ]
           },
           "configurations": {
@@ -56,10 +62,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "PWAS:build:production"
+              "buildTarget": "schema:build:production"
             },
             "development": {
-              "buildTarget": "PWAS:build:development"
+              "buildTarget": "schema:build:development"
             }
           },
           "defaultConfiguration": "development"
