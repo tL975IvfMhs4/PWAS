@@ -29,6 +29,6 @@
     }
   ],
   "paths": {
-    "@shared": "libs"
+    "@shared": "apps/libs"
   }
 }
