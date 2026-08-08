@@ -28,6 +28,19 @@ public class Server {
         attributeHandlers(pwasManager);
     }
 
+    public static void stop() {
+        System.exit(0);
+    }
+
+    public static void crash() {
+        System.exit(1);
+    }
+
+    public static void crash(Runnable beforeCrash) {
+        beforeCrash.run();
+        crash();
+    }
+
     private static void manageCertificates() {
         new CertificateManager().manageCertificates();
     }

@@ -1,5 +1,7 @@
 package com.github.tL975IvfMhs4.constant;
 
+import java.nio.file.Path;
+
 public final class ServerConstants {
     /**
      * Dossier réservé contenant les données nécessaires au bon fonctionnement du serveur.
@@ -10,24 +12,7 @@ public final class ServerConstants {
      */
     public static final String SERVER_FOLDER = ".pwas-server";
 
-
-
-    /**
-     * Dossier des certificats tls du serveur. Il est recommandé de nettoyer ces certificats le moins souvent possible
-     * puisqu’ils seront importés sur les mobiles pour faire fonctionner les PWA, donc un changement de certificat
-     * invaliderait intégralement la PWA et forcerait sa réinstallation.
-     */
-    public static final String CERTIFICATE_FOLDER = "certificats";
-
-    /**
-     * Nom des fichiers contenant la clé publique et la clé privée.
-     */
-    public static final String FICHIER_CLE_CHIFFREMENT = "cle";
-
-    /**
-     * Nom des fichiers contenant les certificats aux différents formats.
-     */
-    public static final String FICHIER_CERTIFICAT = "certificat";
+    public static final String SERVER_FOLDER_ABSOLUTE = Path.of(System.getProperty("user.home"), SERVER_FOLDER).toString();
 
 
 
