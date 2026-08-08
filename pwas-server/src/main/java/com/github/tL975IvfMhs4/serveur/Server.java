@@ -15,8 +15,8 @@ public class Server {
     public static void run() {
         final PWASManager pwasManager = new PWASManager();
 
-        // Recherche et génération des certificats
-        manageCertificates();
+        // Chargement des certificats avec génération si nécessaire
+        loadCertificates();
 
         // Recherche du dist, mode release ou dev
         loadPWAS(pwasManager);
@@ -25,7 +25,7 @@ public class Server {
         prepareLocalDNS();
 
         // Attribution des handlers pour les routes
-        attributeHandlers(pwasManager);
+        assignRequestHandlers(pwasManager);
     }
 
     public static void stop() {
@@ -41,8 +41,8 @@ public class Server {
         crash();
     }
 
-    private static void manageCertificates() {
-        new SecurityService().manageCertificates();
+    private static void loadCertificates() {
+        new SecurityService().loadCertificates();
     }
 
     private static void loadPWAS(PWASManager pwasManager) {
@@ -53,7 +53,7 @@ public class Server {
         new LocalDNSManager().prepareLocalDNS();
     }
 
-    private static void attributeHandlers(PWASManager pwasManager) {
-        pwasManager.attributeHandlers();
+    private static void assignRequestHandlers(PWASManager pwasManager) {
+        pwasManager.assignRequestHandlers();
     }
 }

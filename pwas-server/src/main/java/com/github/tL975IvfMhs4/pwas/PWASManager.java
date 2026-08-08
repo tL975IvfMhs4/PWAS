@@ -9,7 +9,7 @@ public class PWASManager {
 
     // Créer les handlers pour servir le contenu du dist
     // Créer un handler pour les codes QR
-    public void attributeHandlers() {
+    public void assignRequestHandlers() {
 
     }
 }

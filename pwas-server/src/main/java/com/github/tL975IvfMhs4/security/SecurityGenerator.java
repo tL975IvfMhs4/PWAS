@@ -1,20 +1,17 @@
 package com.github.tL975IvfMhs4.security;
 
 import com.github.tL975IvfMhs4.constant.DNSConstants;
-import com.github.tL975IvfMhs4.serveur.Server;
 import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x500.X500NameBuilder;
+import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.asn1.x509.*;
 import org.bouncycastle.cert.CertIOException;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
 import java.security.*;
@@ -22,7 +19,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
-import java.security.spec.RSAKeyGenParameterSpec;
+import java.security.spec.ECGenParameterSpec;
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.Date;
@@ -31,71 +28,108 @@ import static com.github.tL975IvfMhs4.constant.DNSConstants.LOCAL_DNS_NAME;
 import static com.github.tL975IvfMhs4.constant.SecurityConstants.*;
 
 public final class SecurityGenerator {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityGenerator.class);
 
-    public static KeyPair generateRSAKeyPair() {
-        try {
-            final KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA", SECURITY_PROVIDER);
-            gen.initialize(new RSAKeyGenParameterSpec(TAILLE_CLE_RSA, RSAKeyGenParameterSpec.F4));
-            return gen.generateKeyPair();
-        } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
-            Server.crash(() -> LOGGER.error("Impossible de construire le générateur de clés de chiffrement RSA avec le provider BC (bouncy castle), le serveur ne peut pas continuer de fonctionner", e));
-        } catch (InvalidAlgorithmParameterException e) {
-            Server.crash(() -> LOGGER.error("Impossible d’initialiser le générateur RSA avec l’exposant F4 (65537) pour la clé de taille {}", TAILLE_CLE_RSA, e));
-        }
-        // On ne passe jamais dans ce return null en pratique puisqu’on arrête le serveur en cas d’erreur
-        return null;
-    }
-
-    // TODO pas fini du tout
+    /**
+     * Génération d’une paire de clés ECDSA P-256 (sha2)
+     * @return
+     */
     public static KeyPair generateECDSAKeyPair() {
         try {
-            final KeyPairGenerator gen = KeyPairGenerator.getInstance("ECDSA", SECURITY_PROVIDER);
-            gen.initialize(new RSAKeyGenParameterSpec(TAILLE_CLE_RSA, RSAKeyGenParameterSpec.F4));
-            return gen.generateKeyPair();
+            final KeyPairGenerator generateur = KeyPairGenerator.getInstance("EC", SECURITY_PROVIDER);
+            generateur.initialize(new ECGenParameterSpec("secp256r1"));
+            return generateur.generateKeyPair();
         } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
-            Server.crash(() -> LOGGER.error("Impossible de construire le générateur de clés de chiffrement RSA avec le provider BC (bouncy castle), le serveur ne peut pas continuer de fonctionner", e));
+            throw new TLSSecurityException("Impossible de construire le générateur de clés de chiffrement ECDSA avec le provider BC (bouncy castle), le serveur ne peut pas continuer de fonctionner", e);
         } catch (InvalidAlgorithmParameterException e) {
-            Server.crash(() -> LOGGER.error("Impossible d’initialiser le générateur RSA avec l’exposant F4 (65537) pour la clé de taille {}", TAILLE_CLE_RSA, e));
+            throw new TLSSecurityException("Impossible d’initialiser le générateur ECDSA avec le curve secp256r1", e);
         }
-        // On ne passe jamais dans ce return null en pratique puisqu’on arrête le serveur en cas d’erreur
-        return null;
     }
 
     // TODO
     //     La clock devra être sur utc pour être tranquille (éviter les pièges foireux)
     //     C’est marqué ici puisque c’est le premier endroit où la clock est mentionnée dans le code
 
-    // TODO retourner un objet contenant un certificat et une erreur/liste d’erreurs à afficher, ou alors lever une exception maison ? et faire la même chose pour l’autre endroit où on est obligés de se coltiner un return null qui ne devrait pas exister
-    public static X509Certificate generateCACertificate(KeyPair cles, Clock clock) {
+    /**
+     * Génération d’un certificat de CA auto-signé.
+     * @param clesECDSA
+     * @param clock
+     * @return
+     */
+    public static X509Certificate generateCACertificate(KeyPair clesECDSA, Clock clock) {
+        // Le certificat CA est auto-signé donc la clé privée et la clé publique proviennent de la même paire
+        return generateCertificate(clesECDSA.getPublic(), clesECDSA.getPrivate(), clock, null);
+    }
+
+    /**
+     * Génération d’un certificat serveur X509 signé par le certificat de CA donné. La clé privée est celle de la CA.
+     * @param cleECDSAPubliqueServeur
+     * @param cleECDSAPriveeCA
+     * @param clock
+     * @param caCertificate
+     * @return
+     */
+    public static X509Certificate generateServerCertificate(PublicKey cleECDSAPubliqueServeur, PrivateKey cleECDSAPriveeCA, Clock clock, X509Certificate caCertificate) {
+        // Le certificat serveur est signé par la clé privée de la CA donc il faut faire la distinction
+        return generateCertificate(cleECDSAPubliqueServeur, cleECDSAPriveeCA, clock, caCertificate);
+    }
+
+    /**
+     * Génération d’un certificat X509 pour les valeurs données. Le certificat en paramètre est un certificat de CA, et sa présence indique qu’on s’en
+     * servira pour signer un certificat serveur.<p>
+     * Si on génère un certificat de CA (certificat en paramètre null), il sera auto-signé donc la clé privée et la clé publique doivent provenir de la même paire.<p>
+     * Sinon, la clé publique sera celle du serveur, et la clé privée celle de la CA.<p>
+     * Les clés DOIVENT être générées pour l’algo ECDSA P-256 (sha2). Il y aura une exception si la clé est autre (par exemple RSA).
+     * @param cleECDSAPublique Clé publique du certificat à générer.
+     * @param cleECDSAPrivee Clé privée liée à la clé publique si on doit générer une CA, clé privée de la CA sinon
+     * @param clock
+     * @param caCertificate Éventuel certificat de la CA si on doit générer et signer un certificat serveur.
+     * @return
+     */
+    private static X509Certificate generateCertificate(PublicKey cleECDSAPublique, PrivateKey cleECDSAPrivee, Clock clock, X509Certificate caCertificate) {
+
+        final boolean generatingCA = caCertificate == null;
 
         // --------------------------------------
         // DONNÉES DE BASE DU CERTIFICAT
         // --------------------------------------
 
-        // Sujet du certificat, on met un peu ce qu’on veut sauf pour le CN où on met le nom de domaine
-        // TODO utiliser le builder pour rendre ça plus propre
-        final X500Name sujet = new X500Name("C=FR, L=Maison, O=PWAS, CN=" + LOCAL_DNS_NAME + " CA");
+        // Sujet du certificat, on met un peu ce qu’on veut sauf pour le CN où on met le nom de domaine avec CA pour que la chose soit bien claire (rien pour le serveur)
+        final X500Name sujet = new X500NameBuilder()
+            .addRDN(BCStyle.C, "FR")
+            .addRDN(BCStyle.L, "Maison")
+            .addRDN(BCStyle.O, "PWAS")
+            .addRDN(BCStyle.CN, LOCAL_DNS_NAME + (generatingCA ? " CA" : ""))
+            .build();
 
         // On utilise le timestamp comme numéro de série pour éviter tout risque de conflit si on doit régénérer les certificats plus tard
         final BigInteger serialNumber = BigInteger.valueOf(clock.millis());
 
-        // Le certificat commence 10 secondes avant le démarrage du serveur, et périme dans 100 ans
+        // Le certificat commence sa période de validité 10 secondes avant le démarrage du serveur, et périme dans 100 ans
         final Date notBefore = Date.from(clock.instant().minusSeconds(10));
         final Date notAfter = Date.from(OffsetDateTime.now(clock).plusYears(100).toInstant());
 
-        // Le sujet est en premier paramètre à la place de l’issuer puisqu’on construit une CA, donc on auto-signe le certificat
-        // TODO : la clé publique du serveur sera une RSA, à ne pas confondre avec la clé privée du ContentSigner qui sera la clé privée ECDSA de la CA
-        //        à voir : j’aurai en fait probablement jamais besoin de RSA, ECDSA fera le boulot tout du long, et donc même pas besoin de keyEncipherment dans le keyUsage du certificat serveur
-        final JcaX509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(
-            sujet,
-            serialNumber,
-            notBefore,
-            notAfter,
-            sujet,
-            cles.getPublic()
-        );
-
+        // Si on construit un certificat de CA, il est auto-signé donc le sujet est en premier paramètre à la place de l’issuer
+        // Si on construit un certificat serveur, on doit le signer avec le certificat de la CA
+        final JcaX509v3CertificateBuilder certificateBuilder;
+        if (generatingCA) {
+            certificateBuilder = new JcaX509v3CertificateBuilder(
+                sujet,
+                serialNumber,
+                notBefore,
+                notAfter,
+                sujet,
+                cleECDSAPublique
+            );
+        } else {
+            certificateBuilder = new JcaX509v3CertificateBuilder(
+                caCertificate,
+                serialNumber,
+                notBefore,
+                notAfter,
+                sujet,
+                cleECDSAPublique
+            );
+        }
 
 
         // --------------------------------------
@@ -112,60 +146,63 @@ public final class SecurityGenerator {
         try {
             certificateBuilder.addExtension(Extension.subjectAlternativeName, false, subjectAltNames);
         } catch (CertIOException e) {
-            Server.crash(() -> LOGGER.error("Impossible de rajouter un SAN de certificat de la CA", e));
+            throw new TLSSecurityException("Impossible de rajouter un SAN dans le certificat", e);
         }
 
-        // On est une CA donc on a le droit de signer des certificats et des CRL (listes noires), rien de plus
-        // TODO le certificat serveur aura digitalSignature + keyEncipherment
+        // Si on est une CA, on a le droit de signer des certificats et des CRL (listes noires)
+        // Si on est le serveur, on a le droit de signer la clé de chiffrement symétrique, rien de plus (on utilise des clés ECDSA donc pas besoin de keyEncipherment comme pour RSA)
         try {
-            certificateBuilder.addExtension(Extension.keyUsage, true, new KeyUsage(KeyUsage.cRLSign | KeyUsage.keyCertSign));
+            certificateBuilder.addExtension(Extension.keyUsage, true, new KeyUsage(generatingCA ? (KeyUsage.cRLSign | KeyUsage.keyCertSign) : KeyUsage.digitalSignature));
         } catch (CertIOException e) {
-            Server.crash(() -> LOGGER.error("Impossible de renseigner les usages de clé dans le certificat de la CA", e));
+            throw new TLSSecurityException("Impossible de renseigner les usages de clé dans le certificat", e);
         }
 
         // Pas de extendedKeyUsage pour la CA
-        // TODO il faudra donner serverAuth au certificat serveur, non critique
+        // Le certificat serveur utilisera serverAuth
+        if (!generatingCA) {
+            try {
+                certificateBuilder.addExtension(Extension.extendedKeyUsage, false, new ExtendedKeyUsage(KeyPurposeId.id_kp_serverAuth));
+            } catch (CertIOException e) {
+                throw new TLSSecurityException("Impossible de renseigner l’usage étendu de clé serverAuth dans le certificat");
+            }
+        }
 
-        // Basic constraints : on génère une CA donc CA:true
-        // TODO faux pour le certificat serveur
+        // Basic constraints : on génère une CA donc CA:true, ou alors false pour le serveur
+        // Dans tous les cas, on garde l’extension maximum à sa valeur par défaut 0, ainsi une éventuelle CA signée par cette CA ne pourra pas signer d’autres certificats
         try {
-            certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(true));
+            certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(generatingCA));
         } catch (CertIOException e) {
-            Server.crash(() -> LOGGER.error("Impossible de marquer le certificat comme CA dans les contraintes de base", e));
+            throw new TLSSecurityException("Impossible de renseigner les contraintes de base du certificat", e);
         }
 
         // Signature du certificat, on utilise ECDSA P-256
-        // TODO pareil pour le certificat serveur
         try {
-            final ContentSigner contentSigner = new JcaContentSignerBuilder(CA_KEY_ALGORITHM).setProvider(SECURITY_PROVIDER).build(cles.getPrivate());
+            final ContentSigner contentSigner = new JcaContentSignerBuilder(CA_KEY_ALGORITHM).setProvider(SECURITY_PROVIDER).build(cleECDSAPrivee);
 
             final X509CertificateHolder holder = certificateBuilder.build(contentSigner);
             final X509Certificate certificat = new JcaX509CertificateConverter().setProvider(SECURITY_PROVIDER).getCertificate(holder);
 
             certificat.checkValidity();
-            // TODO : le serveur devra utiliser sa propre clé publique
-            certificat.verify(cles.getPublic());
+            certificat.verify(cleECDSAPublique);
 
             return certificat;
-        } catch (OperatorCreationException e) {
-            Server.crash(() -> LOGGER.error("Impossible de générer la signature du certificat de la CA", e));
-        } catch (CertificateExpiredException e) {
-            Server.crash(() -> LOGGER.error("Échec de validation du certificat CA généré : déjà expiré", e));
-        } catch (CertificateNotYetValidException e) {
-            Server.crash(() -> LOGGER.error("Échec de validation du certificat CA généré :  pas encore rentré dans sa période de validité qui aurait dû déjà commencer", e));
-        } catch (CertificateException e) {
-            Server.crash(() -> LOGGER.error("Impossible de générer le X509Certificate de la CA depuis le holder", e));
-        } catch (NoSuchAlgorithmException e) {
-            Server.crash(() -> LOGGER.error("Échec de validation du certificat CA généré : algorithme de la signature invalide", e));
-        } catch (SignatureException e) {
-            Server.crash(() -> LOGGER.error("Échec de validation du certificat CA généré : erreur de signature", e));
-        } catch (InvalidKeyException e) {
-            Server.crash(() -> LOGGER.error("Échec de validation du certificat CA généré : clé invalide", e));
-        } catch (NoSuchProviderException e) {
-            Server.crash(() -> LOGGER.error("Échec de validation du certificat CA généré : le provider bouncycastle n’a pas été trouvé", e));
-        }
 
-        // Ce return ne sera jamais atteint parce que tous les catch mènent à un arrêt de la jvm
-        return null;
+        } catch (OperatorCreationException e) {
+            throw new TLSSecurityException("Impossible de générer la signature du certificat", e);
+        } catch (CertificateExpiredException e) {
+            throw new TLSSecurityException("Échec de validation du certificat généré : déjà expiré", e);
+        } catch (CertificateNotYetValidException e) {
+            throw new TLSSecurityException("Échec de validation du certificat généré : pas encore rentré dans sa période de validité qui aurait dû commencer", e);
+        } catch (CertificateException e) {
+            throw new TLSSecurityException("Impossible de générer le X509Certificate depuis le holder", e);
+        } catch (NoSuchAlgorithmException e) {
+            throw new TLSSecurityException("Échec de validation du certificat généré : algorithme de la signature invalide", e);
+        } catch (SignatureException e) {
+            throw new TLSSecurityException("Échec de validation du certificat généré : erreur de signature", e);
+        } catch (InvalidKeyException e) {
+            throw new TLSSecurityException("Échec de validation du certificat généré : clé invalide", e);
+        } catch (NoSuchProviderException e) {
+            throw new TLSSecurityException("Échec de validation du certificat généré : le provider bouncycastle n’a pas été trouvé", e);
+        }
     }
 }

@@ -61,7 +61,9 @@ public final class SecurityConstants {
     public static final String SECURITY_PROVIDER = "BC";
 
     /**
-     *
+     * Identifiant de l’algo de chiffrement choisi pour les clés de chiffrement des certificats, à fournir au ContentSigner.<p>
+     * On utilise ECDSA P-256. C’est bouncycastle qui met cet algo à disposition (sans exposer de constante d’où la string en dur),
+     * pas un SecurityProvider intégré à la JVM.
      */
     public static final String CA_KEY_ALGORITHM = "SHA256WithECDSA";
 
