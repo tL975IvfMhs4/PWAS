@@ -4,10 +4,10 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.github.tL975IvfMhs4</groupId>
-    <artifactId>pwas-launcher</artifactId>
+    <artifactId>pwas-server</artifactId>
     <version>0.0-SNAPSHOT</version>
 
-    <name>pwas-launcher</name>
+    <name>pwas-server</name>
     <url>https://github.com/tL975IvfMhs4</url>
 
     <properties>
@@ -15,6 +15,7 @@
         <maven.compiler.release>25</maven.compiler.release>
 
         <junit.version>5.11.0</junit.version>
+        <mockito.version>5.23.0</mockito.version>
 
         <undertow.version>2.4.2.Final</undertow.version>
         <bouncycastle.version>1.85</bouncycastle.version>
@@ -41,9 +42,16 @@
             <artifactId>undertow-core</artifactId>
             <version>${undertow.version}</version>
         </dependency>
+
+        <!-- Sécurité -->
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk18on</artifactId>
+            <version>${bouncycastle.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk18on</artifactId>
             <version>${bouncycastle.version}</version>
         </dependency>
 
@@ -70,6 +78,12 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-params</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

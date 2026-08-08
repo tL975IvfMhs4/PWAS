@@ -1,17 +1,23 @@
 package com.github.tL975IvfMhs4.security;
 
 import com.github.tL975IvfMhs4.serveur.Server;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.security.Security;
 
 import static com.github.tL975IvfMhs4.constant.SecurityConstants.*;
 
-public class SecurityManager {
+public class SecurityService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityManager.class);
+//    static {
+//        Security.addProvider(new BouncyCastleProvider());
+//    }
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityService.class);
 
     // Le dossier doit contenir
     //     - une CA

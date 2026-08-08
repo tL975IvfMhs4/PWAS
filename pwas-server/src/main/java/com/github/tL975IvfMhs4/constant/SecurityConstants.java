@@ -50,5 +50,19 @@ public final class SecurityConstants {
 
     public static final String SERVEUR_P12_FILE_NAME = NOMS_FICHIERS_SERVEUR + EXTENSION_P12;
 
+    /**
+     * Taille de la clé RSA pour le chiffrement serveur.
+     */
     public static final int TAILLE_CLE_RSA = 3072;
+
+    /**
+     * Le provider de sécurité est bouncy castle.
+     */
+    public static final String SECURITY_PROVIDER = "BC";
+
+    /**
+     *
+     */
+    public static final String CA_KEY_ALGORITHM = "SHA256WithECDSA";
+
 }
