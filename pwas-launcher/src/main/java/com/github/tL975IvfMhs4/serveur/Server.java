@@ -1,6 +1,6 @@
 package com.github.tL975IvfMhs4.serveur;
 
-import com.github.tL975IvfMhs4.certificats.CertificateManager;
+import com.github.tL975IvfMhs4.security.SecurityManager;
 import com.github.tL975IvfMhs4.dns.LocalDNSManager;
 import com.github.tL975IvfMhs4.pwas.PWASManager;
 
@@ -42,7 +42,7 @@ public class Server {
     }
 
     private static void manageCertificates() {
-        new CertificateManager().manageCertificates();
+        new SecurityManager().manageCertificates();
     }
 
     private static void loadPWAS(PWASManager pwasManager) {

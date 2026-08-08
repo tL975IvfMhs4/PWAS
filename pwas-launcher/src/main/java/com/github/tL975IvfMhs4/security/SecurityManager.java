@@ -1,4 +1,4 @@
-package com.github.tL975IvfMhs4.certificats;
+package com.github.tL975IvfMhs4.security;
 
 import com.github.tL975IvfMhs4.serveur.Server;
 import org.slf4j.Logger;
@@ -7,11 +7,11 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import static com.github.tL975IvfMhs4.constant.CertificateConstants.*;
+import static com.github.tL975IvfMhs4.constant.SecurityConstants.*;
 
-public class CertificateManager {
+public class SecurityManager {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CertificateManager.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityManager.class);
 
     // Le dossier doit contenir
     //     - une CA
@@ -64,6 +64,7 @@ public class CertificateManager {
         }
     }
 
+    // https://docs.keyfactor.com/bouncycastle/latest/how-to-generate-certificates-and-crls
     private void generateCA() {
         // TODO avec bouncy castle
     }

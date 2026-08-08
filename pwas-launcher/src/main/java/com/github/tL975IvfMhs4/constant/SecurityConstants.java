@@ -4,7 +4,7 @@ import java.nio.file.Path;
 
 import static com.github.tL975IvfMhs4.constant.ServerConstants.SERVER_FOLDER_ABSOLUTE;
 
-public final class CertificateConstants {
+public final class SecurityConstants {
 
     /**
      * Dossier des certificats tls du serveur. Il est recommandé de nettoyer ces certificats le moins souvent possible
@@ -49,4 +49,6 @@ public final class CertificateConstants {
 
 
     public static final String SERVEUR_P12_FILE_NAME = NOMS_FICHIERS_SERVEUR + EXTENSION_P12;
+
+    public static final int TAILLE_CLE_RSA = 3072;
 }
