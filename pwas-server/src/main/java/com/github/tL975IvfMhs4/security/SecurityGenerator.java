@@ -13,6 +13,8 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.security.*;
 import java.security.cert.CertificateException;
@@ -58,6 +60,28 @@ public final class SecurityGenerator {
     public static X509Certificate generateCACertificate(KeyPair clesECDSA, Clock clock) {
         // Le certificat CA est auto-signé donc la clé privée et la clé publique proviennent de la même paire
         return generateCertificate(clesECDSA.getPublic(), clesECDSA.getPrivate(), clock, null);
+    }
+
+    // Génère un fichier .p12 contenant le certificat et la clé privée donnés en paramètre.
+    // Le fichier est retourné dans un stream au format binaire, pour laisser le choix sur la façon de consommer le fichier (chargement, écriture, ...)
+    public static ByteArrayOutputStream generateP12(String alias, PrivateKey clePrivee, String motDePasse, X509Certificate... chaineCertification) {
+        try {
+            final char[] mdpTableau = motDePasse.toCharArray();
+            final KeyStore keyStoreP12 = KeyStore.getInstance("PKCS12");
+            keyStoreP12.setKeyEntry(alias, clePrivee, mdpTableau, chaineCertification);
+            final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            keyStoreP12.store(outputStream, mdpTableau);
+            return outputStream;
+        } catch (KeyStoreException e) {
+            throw new TLSSecurityException("Impossible de récupérer le keystore PKCS12, ou celui-ci n’a pas été initialisé", e);
+        } catch (CertificateException e) {
+            throw new TLSSecurityException("Un des certificats de la chaîne à persister est invalide, donc soit le serveur génère des mauvais certificats," +
+                "soit le dossier de certificats contient des fichiers malformés ou corrompus, dans ce cas il est conseillé de vider le dossier et de supprimer le certificat enregistré sur le téléphone", e);
+        } catch (IOException e) {
+            throw new TLSSecurityException("Erreur IO pendant l’écriture du .p12", e);
+        } catch (NoSuchAlgorithmException e) {
+            throw new TLSSecurityException("Un des algorithmes utilisés est manquant (on utilise seulement ECDSA normalement), merci de vérifier que la distribution de java utilisée est correcte", e);
+        }
     }
 
     /**

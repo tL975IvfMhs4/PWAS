@@ -34,6 +34,7 @@ public class SecurityService {
         // TODO pour générer le p12, utiliser le provider PKCS#12 de la jvm
         //      pour charger le p12 dans undertow, créer un SSLContext à partir d’un KeyManagerFactory, lui-même créé à partir d’un keystore qui lit le p12 et le déchiffre à l’aide du mot de passe
         //      le mot de passe du serveur pourra être écrit en dur dans le code parce qu’on s’en fout ? ou alors, on le demande au premier démarrage du serveur dans le terminal, et on l’enregistre chiffré dans un fichier, à voir
+        loadServerCertificateInKeyStore();
     }
 
     private void createDirectoryIfNotExists() {
@@ -80,5 +81,14 @@ public class SecurityService {
     private void checkServerCertificates() {
         // TODO avec bouncy castle, refaire la même chose que checkCA + generateCA (on doit probablement pouvoir mutualiser ça dans une certaine mesure)
         //      pas la peine d’aller revérifier que la CA est correctement définie, si quelqu’un trifouille avec les méthodes privées sans comprendre, tant pis
+    }
+
+    private void generateServerCertificates() {
+        // Génération et écriture sur disque du certificat serveur + clés
+        // Écrire le p12 correspondant pour faciliter le chargement (KeyStore.getInstance("PKCS12"))
+    }
+
+    private void loadServerCertificateInKeyStore() {
+
     }
 }
