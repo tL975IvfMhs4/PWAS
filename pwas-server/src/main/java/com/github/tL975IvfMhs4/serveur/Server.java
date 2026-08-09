@@ -4,6 +4,8 @@ import com.github.tL975IvfMhs4.security.SecurityService;
 import com.github.tL975IvfMhs4.dns.LocalDNSManager;
 import com.github.tL975IvfMhs4.pwas.PWASManager;
 
+import java.time.Clock;
+
 public class Server {
     // Déterminer l’os pour construire les dossiers qu’on vise (linux/mac d’un côté, windows de l’autre)
     // Aller voir le contenu du dossier de certificats, les générer le cas échéant, en utilisant un nom stable
@@ -12,11 +14,11 @@ public class Server {
     // Une fois qu’on a fini de déterminer tout ça, utiliser mDNS (JmDNS ?) pour générer et exposer le nom stable
     // Créer les handler
 
-    public static void run() {
+    public static void run(Clock clock) {
         final PWASManager pwasManager = new PWASManager();
 
         // Chargement des certificats avec génération si nécessaire
-        loadCertificates();
+        loadCertificates(clock);
 
         // Recherche du dist, mode release ou dev
         loadPWAS(pwasManager);
@@ -41,8 +43,8 @@ public class Server {
         crash();
     }
 
-    private static void loadCertificates() {
-        new SecurityService().loadCertificates();
+    private static void loadCertificates(Clock clock) {
+        new SecurityService(clock).loadCertificates();
     }
 
     private static void loadPWAS(PWASManager pwasManager) {

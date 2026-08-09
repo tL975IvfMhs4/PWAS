@@ -2,13 +2,14 @@ package com.github.tL975IvfMhs4;
 
 import com.github.tL975IvfMhs4.serveur.Server;
 
-import java.nio.file.Paths;
+import java.time.Clock;
 
 /**
  * Hello world!
  */
 public class App {
-    public static void main(String[] args) {
-        Server.run();
+    static void main(String[] args) {
+        final Clock clock = Clock.systemUTC();
+        Server.run(clock);
     }
 }

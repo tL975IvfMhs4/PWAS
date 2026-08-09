@@ -50,6 +50,8 @@ public final class SecurityConstants {
 
     public static final String SERVEUR_P12_FILE_NAME = NOMS_FICHIERS_SERVEUR + EXTENSION_P12;
 
+    public static final Path SERVEUR_P12_FILE_PATH = Path.of(CERTIFICATE_FOLDER_ABSOLUTE_PATH.toString(), SERVEUR_P12_FILE_NAME);
+
     /**
      * Taille de la clé RSA pour le chiffrement serveur.
      */
